@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#36338B">
+    <title>TimeBanker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: linear-gradient(135deg, #36338B 0%, #401939 100%);
+            color: #fff;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            text-align: center;
+            padding: 20px;
+        }
+        .container {
+            max-width: 400px;
+            width: 100%;
+        }
+        .logo {
+            font-size: 64px;
+            margin-bottom: 16px;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        h1 {
+            color: #67E92B;
+            font-size: 32px;
+            margin-bottom: 12px;
+            font-weight: 700;
+        }
+        .subtitle {
+            font-size: 16px;
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 24px;
+        }
+        .loader {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(103, 233, 43, 0.3);
+            border-radius: 50%;
+            border-top-color: #67E92B;
+            animation: spin 1s ease-in-out infinite;
+            margin: 24px auto;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        #error-message {
+            display: none;
+            margin-top: 24px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        #error-message h2 {
+            color: #FFD700;
+            font-size: 20px;
+            margin-bottom: 12px;
+        }
+        #error-message p {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 16px;
+            line-height: 1.5;
+        }
+        .btn {
+            display: inline-block;
+            background: #67E92B;
+            color: #02003A;
+            padding: 14px 28px;
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 16px;
+            transition: transform 0.2s;
+        }
+        .btn:active {
+            transform: scale(0.95);
+        }
+        .hint {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.5);
+            margin-top: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">⏰</div>
+        <h1>TimeBanker</h1>
+        <p class="subtitle" id="status-text">Открываем приложение...</p>
+        <div class="loader" id="loader"></div>
+
+        <div id="error-message">
+            <h2>📲 Приложение не установлено?</h2>
+            <p>Установите TimeBanker, чтобы открывать задачи, подтверждения и списания времени.</p>
+            <a href="#" class="btn" id="install-btn">Установить</a>
+            <p class="hint">После установки вернитесь и обновите страницу</p>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            // ============================================
+            // ЧТЕНИЕ ПАРАМЕТРОВ
+            // ============================================
+            const params = new URLSearchParams(window.location.search);
+            const data = params.get('d');
+            const type = params.get('type') || 'tasks';
+
+            const statusText = document.getElementById('status-text');
+            const loader = document.getElementById('loader');
+            const errorMessage = document.getElementById('error-message');
+
+            // ============================================
+            // ПРОВЕРКА ПАРАМЕТРОВ
+            // ============================================
+            if (!data) {
+                statusText.textContent = 'Ошибка: нет данных';
+                loader.style.display = 'none';
+                errorMessage.style.display = 'block';
+                return;
+            }
+
+            // ============================================
+            // ФОРМИРОВАНИЕ DEEP LINK
+            // ============================================
+            const deepLink = `timebank://${type}?d=${encodeURIComponent(data)}`;
+
+            // Обновляем текст в зависимости от типа
+            const typeLabels = {
+                tasks: 'задачи',
+                request: 'запрос на проверку',
+                response: 'ответ от родителя',
+                spend: 'списание времени',
+            };
+            statusText.textContent = `Открываем ${typeLabels[type] || 'приложение'}...`;
+
+            // ============================================
+            // ПОПЫТКА ОТКРЫТЬ ПРИЛОЖЕНИЕ
+            // ============================================
+            function openApp() {
+                // Для iOS используем window.location
+                // Для Android — try/catch с fallback
+                try {
+                    window.location.href = deepLink;
+                } catch (e) {
+                    console.error('Ошибка открытия:', e);
+                }
+            }
+
+            // Запускаем открытие
+            openApp();
+
+            // ============================================
+            // FALLBACK — ЕСЛИ ПРИЛОЖЕНИЕ НЕ ОТКРЫЛОСЬ
+            // ============================================
+            const timeout = setTimeout(function() {
+                statusText.textContent = 'Не удалось открыть приложение';
+                loader.style.display = 'none';
+                errorMessage.style.display = 'block';
+            }, 2500);
+
+            // Если страница теряет фокус — приложение открылось
+            document.addEventListener('visibilitychange', function() {
+                if (document.hidden) {
+                    clearTimeout(timeout);
+                }
+            });
+
+            // Для iOS — pagehide
+            window.addEventListener('pagehide', function() {
+                clearTimeout(timeout);
+            });
+        })();
+    </script>
+</body>
+</html>
