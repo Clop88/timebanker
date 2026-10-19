@@ -66,6 +66,11 @@
             background: rgba(255, 255, 255, 0.1);
             border-radius: 16px;
             border: 1px solid rgba(255, 255, 255, 0.2);
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
         #error-message h2 {
             color: #FFD700;
@@ -117,6 +122,15 @@
     <script>
         (function() {
             // ============================================
+            // НАСТРОЙКИ (ВАЖНО!)
+            // ============================================
+            // Замени это на package из твоего app.json (раздел android -> package)
+            const packageName = 'com.yourname.timebanker'; 
+            
+            // Схема из app.json (поле "scheme")
+            const scheme = 'timebanker'; 
+
+            // ============================================
             // ЧТЕНИЕ ПАРАМЕТРОВ
             // ============================================
             const params = new URLSearchParams(window.location.search);
@@ -140,7 +154,7 @@
             // ============================================
             // ФОРМИРОВАНИЕ DEEP LINK
             // ============================================
-            const deepLink = `timebank://${type}?d=${encodeURIComponent(data)}`;
+            const deepLink = `${scheme}://${type}?d=${encodeURIComponent(data)}`;
 
             // Обновляем текст в зависимости от типа
             const typeLabels = {
@@ -152,15 +166,19 @@
             statusText.textContent = `Открываем ${typeLabels[type] || 'приложение'}...`;
 
             // ============================================
-            // ПОПЫТКА ОТКРЫТЬ ПРИЛОЖЕНИЕ
+            // ОПРЕДЕЛЕНИЕ ПЛАТФОРМЫ И ЗАПУСК
             // ============================================
+            const userAgent = navigator.userAgent.toLowerCase();
+            const isAndroid = userAgent.indexOf('android') > -1;
+
             function openApp() {
-                // Для iOS используем window.location
-                // Для Android — try/catch с fallback
-                try {
+                if (isAndroid) {
+                    // Для Android используем intent:// (обходит блокировку браузера)
+                    const intentUrl = `intent://${type}?d=${encodeURIComponent(data)}#Intent;scheme=${scheme};package=${packageName};end`;
+                    window.location.href = intentUrl;
+                } else {
+                    // Для iOS и остальных используем кастомную схему
                     window.location.href = deepLink;
-                } catch (e) {
-                    console.error('Ошибка открытия:', e);
                 }
             }
 
